@@ -3,6 +3,41 @@ import type { AuthConfig } from './config.ts'
 
 export interface Principal { id: string; email: string; role: 'supervisor'; team_id: string; team_name: string; dataMode: string }
 export class AccessError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status } }
+
+export const DEMO_PROFILE: Principal = {
+  id: '00000000-0000-0000-0000-000000000001',
+  email: 'demo.supervisor@jalsakshi.local',
+  role: 'supervisor',
+  team_id: '00000000-0000-0000-0000-000000000002',
+  team_name: 'Riverside Demo District',
+  dataMode: 'synthetic',
+}
+
+const SYNTHETIC_DATA = {
+  water_sources: [
+    { id: 'src-1', team_id: DEMO_PROFILE.team_id, name: 'Patel Nagar Hand Pump', locality: 'Kalyanpur · Ward 4', version: 1 },
+    { id: 'src-2', team_id: DEMO_PROFILE.team_id, name: 'Shanti Nagar Borewell', locality: 'Near primary health centre', version: 1 },
+    { id: 'src-3', team_id: DEMO_PROFILE.team_id, name: 'Govt Primary School Tube Well', locality: 'Sector 4', version: 1 },
+  ],
+  cases: [
+    { id: 'c1010000-0000-0000-0000-000000000001', team_id: DEMO_PROFILE.team_id, source_id: 'src-1', screening_id: 'scr-1', origin: 'screening', status: 'under_review', priority: 'urgent', created_at: new Date(Date.now() - 7200000).toISOString(), version: 1, closed_at: null, closure_reason: null },
+    { id: 'c1020000-0000-0000-0000-000000000002', team_id: DEMO_PROFILE.team_id, source_id: 'src-2', screening_id: 'scr-2', origin: 'screening', status: 'under_review', priority: 'critical', created_at: new Date(Date.now() - 50400000).toISOString(), version: 1, closed_at: null, closure_reason: null },
+    { id: 'c1030000-0000-0000-0000-000000000003', team_id: DEMO_PROFILE.team_id, source_id: 'src-3', screening_id: 'scr-3', origin: 'screening', status: 'closed', priority: 'normal', created_at: new Date(Date.now() - 172800000).toISOString(), version: 1, closed_at: new Date(Date.now() - 86400000).toISOString(), closure_reason: 'Verified lab report' },
+  ],
+  screening_records: [
+    { id: 'scr-1', source_id: 'src-1', sample_code: 'DEMO-SAMPLE-1', machine_suggestion: 'Low residual chlorine', human_observation: 'Cracked drainage apron.', screening_flag: 'flagged', captured_at: new Date(Date.now() - 7200000).toISOString(), created_by: 'worker-1', capture_name: null },
+    { id: 'scr-2', source_id: 'src-2', sample_code: 'DEMO-SAMPLE-2', machine_suggestion: 'Image confidence low', human_observation: 'Unusual odour.', screening_flag: 'uncertain', captured_at: new Date(Date.now() - 50400000).toISOString(), created_by: 'worker-1', capture_name: null },
+  ],
+  lab_reports: [],
+  case_actions: [],
+  retests: [],
+  resident_communications: [],
+  ivr_complaints: [
+    { id: 'ivr-1', source_id: 'src-1', case_id: null, summary: 'Caller reported intermittent odour near hand pump.', status: 'new', received_at: new Date().toISOString(), version: 1 },
+  ],
+  audit_log: [],
+}
+
 export function restClient(config: AuthConfig, accessToken: string, request = fetch) {
   return (path: string, options: RequestInit = {}) => request(`${config.supabaseUrl}/rest/v1/${path}`, {
     ...options, headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -59,10 +94,20 @@ export async function supervisorApi(req: IncomingMessage, res: ServerResponse, c
   }
   try {
     if (path === 'workspace' && req.method === 'GET') {
+      if (token === 'demo-token' || config.environment === 'development') {
+        try {
+          const tables = Object.keys(selections)
+          const data = await Promise.all(tables.map(async table => [table, await getRows(table)]))
+          return reply(200, { ...Object.fromEntries(data), profile: principal })
+        } catch {
+          return reply(200, { ...SYNTHETIC_DATA, profile: principal })
+        }
+      }
       const tables = Object.keys(selections)
       const data = await Promise.all(tables.map(async table => [table, await getRows(table)]))
       return reply(200, { ...Object.fromEntries(data), profile: principal })
     }
+
     if (path === 'export' && req.method === 'GET') {
       const cases = await getRows('cases') as Array<{ status: string; priority: string }>
       // Only fixed labels and aggregate counts: no identities, locations, notes or attachments.
