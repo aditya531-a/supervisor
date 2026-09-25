@@ -90,6 +90,10 @@ async (page) => {
   assert(await page.locator('.reference-lab-queue__list > button').count()===5,'Filter failed');
   await page.getByLabel('Filter sample status').selectOption('Report uploaded');
   assert(await page.locator('.reference-lab-queue__list > button').count()===1,'Uploaded report filter failed');
+  assert(await page.getByRole('heading',{name:'RS-1043'}).count()===1,'Sample details should follow the filtered queue');
+  await page.getByLabel('Filter sample status').selectOption('Verified');
+  assert(await page.getByText('No sample matches this status.').count()===1,'Empty queue should clear sample details');
+  assert(await page.getByText('LAB-028').count()===0,'Empty queue should clear laboratory details');
   await page.getByLabel('Filter sample status').selectOption('all');
   await nav('Overview').click();
   await page.setViewportSize({width:390,height:844});
