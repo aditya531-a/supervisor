@@ -5,10 +5,16 @@ export interface Principal { id: string; email: string; role: 'supervisor'; team
 export class AccessError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status } }
 
 export function restClient(config: AuthConfig, accessToken: string, request = fetch) {
-  return (path: string, options: RequestInit = {}) => request(`${config.supabaseUrl}/rest/v1/${path}`, {
-    ...options, headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    signal: AbortSignal.timeout(15000), redirect: 'error',
-  })
+  return (path: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers)
+    headers.set('apikey', config.publishableKey)
+    headers.set('Authorization', `Bearer ${accessToken}`)
+    headers.set('Content-Type', 'application/json')
+    if (!headers.has('Prefer')) headers.set('Prefer', 'return=representation')
+    return request(`${config.supabaseUrl}/rest/v1/${path}`, {
+      ...options, headers, signal: AbortSignal.timeout(15000), redirect: 'error',
+    })
+  }
 }
 export async function supervisorProfile(config: AuthConfig, token: string, user: { id: string; email: string }, request = fetch): Promise<Principal> {
   const rest = restClient(config, token, request)
@@ -52,12 +58,14 @@ export async function supervisorApi(req: IncomingMessage, res: ServerResponse, c
   const getRows = async (table: string) => {
     const params = new URLSearchParams({ select: selections[table], team_id: `eq.${principal.team_id}`, limit: '1001' })
     if (table === 'audit_log') params.set('order','sequence.asc')
-    const result = await rest(`${table}?${params}`)
+    const result = await rest(`${table}?${params}`, { headers: { Prefer: 'count=exact' } })
     if (!result.ok) {
       throw new AccessError(503, 'Unable to load team records. Please retry or contact your administrator.')
     }
-    const rows = await result.json() as unknown[]
-    if (rows.length > 1000) throw new AccessError(413, 'This team exceeds the current board limit. Ask your administrator to enable paginated access.')
+    const rows = await result.json() as unknown
+    const count = Number(result.headers.get('Content-Range')?.match(/\/(\d+)$/)?.[1])
+    if (count > 1000) throw new AccessError(413, 'This team exceeds the current board limit. Ask your administrator to enable paginated access.')
+    if (!Number.isSafeInteger(count) || !Array.isArray(rows) || rows.length !== count) throw new AccessError(503, 'Unable to verify complete team records. Please retry or contact your administrator.')
     return rows
   }
   try {
