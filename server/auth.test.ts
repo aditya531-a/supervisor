@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createAuthHandler } from './auth.ts'
 import { readConfig } from './config.ts'
 
-const env = { JALSAKSHI_SUPABASE_URL: 'https://example.supabase.co', JALSAKSHI_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' }
+const env = { JALSAKSHI_SUPABASE_URL: 'https://example.supabase.co', JALSAKSHI_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test', JALSAKSHI_TENANT_DATA_MODE: 'synthetic' }
 const config = readConfig(env)
 const json = (body: object, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status }))
 const success = () => json({ access_token: 'provider-secret-token', refresh_token: 'refresh-secret', expires_in: 3600, user: { id: 'test-user', email: 'test@example.org' } })

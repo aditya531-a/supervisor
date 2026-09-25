@@ -20,7 +20,7 @@ export async function supervisorProfile(config: AuthConfig, token: string, user:
   const teamResponse = await rest(`teams?id=eq.${encodeURIComponent(profile.team_id)}&select=id,name,data_mode`)
   if (!teamResponse.ok) throw new AccessError(503, 'Unable to verify your team. Please try again.')
   const teams = await teamResponse.json() as Array<{ name: string; data_mode: string }>
-  if (teams.length !== 1 || (teams[0].data_mode !== config.dataMode && !['synthetic', 'live'].includes(teams[0].data_mode))) throw new AccessError(403, 'Your team is not enabled for this workspace data mode.')
+  if (teams.length !== 1 || teams[0].data_mode !== config.dataMode) throw new AccessError(403, 'Your team is not enabled for this workspace data mode.')
   return { ...user, role: 'supervisor', team_id: profile.team_id, team_name: teams[0].name, dataMode: config.dataMode }
 }
 const selections: Record<string, string> = {
