@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { database } from './database.ts'
+import { assertSupervisorSchema, database } from './database.ts'
 const db=await database();let passed=0
 const ids={team:randomUUID(),otherTeam:randomUUID(),supervisor:randomUUID(),other:randomUUID(),worker:randomUUID(),source:randomUUID(),otherSource:randomUUID(),screening:randomUUID()}
 async function asUser(id:string){await db.query('reset role');await db.query("select set_config('request.jwt.claims',$1::text,true)",[JSON.stringify({sub:id,role:'authenticated'})]);await db.query('set local role authenticated')}
 async function rejected(sql:string,params:unknown[],code:string){await db.query('savepoint reject_test');try{await db.query(sql,params);assert.fail('Expected rejection')}catch(e){assert.equal((e as {code?:string}).code,code)}finally{await db.query('rollback to savepoint reject_test')}passed++}
 try{
+ await assertSupervisorSchema(db)
  await db.query('begin')
  await db.query("insert into public.teams(id,name) values($1::uuid,'Rollback test'),($2::uuid,'Other team')",[ids.team,ids.otherTeam])
  for(const id of [ids.supervisor,ids.other,ids.worker]) await db.query("insert into auth.users(id,email) values($1::uuid,$1::text || '@test.local')",[id])

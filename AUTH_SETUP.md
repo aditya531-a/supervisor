@@ -14,7 +14,7 @@ The database password supplied in chat needs rotation through Supabase's dashboa
 
 ## Accounts and sessions
 
-The provisioned demo supervisor belongs to **Riverside Demo District**, with synthetic records. Its credentials are stored in `.demo-credentials.local`, not tracked documentation. `npm run demo:seed` provisions a fresh demo only; it refuses to replace an existing account. It also creates a synthetic worker for sample provenance. No invitation or confirmation emails are sent.
+After `npm run demo:seed`, the demo supervisor belongs to **Riverside Demo District**, with synthetic records. Its credentials are stored in `.demo-credentials.local`, not tracked documentation. The command provisions a fresh demo only; it refuses to replace an existing account. It also creates a synthetic worker for sample provenance. No invitation or confirmation emails are sent.
 
 For other users, an administrator must create a confirmed Supabase Auth user, a team, and a `public.profiles` row containing that user's ID, `role='supervisor'`, and the assigned `team_id`. Users cannot grant themselves a role. Workers cannot sign in to this dashboard.
 
@@ -33,7 +33,7 @@ npm run db:migrate -- --check
 npm run db:migrate
 ```
 
-The runner applies ordered SQL migrations in one transaction under an advisory lock, records checksums in `supervisor_private.schema_migrations`, and refuses modified applied files. `--check` rolls back pending work. The six initial migrations have already been applied to the configured project and recorded in the ledger.
+The runner applies ordered SQL migrations in one transaction under an advisory lock, records checksums in `supervisor_private.schema_migrations`, and refuses modified applied files. `--check` rolls back pending work. Confirm the configured project and migration history before seeding; a checksum mismatch needs investigation, not a ledger edit.
 
 The public supervisor tables are separate from the pre-existing `jalsakshi` ingestion tables. Those tables were preserved. Automatic ingestion bridging is not enabled because a trustworthy tenant/worker mapping has not been supplied.
 
@@ -43,7 +43,7 @@ RLS confines reads and writes to the assigned team. SQL functions serialize case
 
 Evidence downloads require an authenticated team member. Attachments accept PDF, PNG, or JPEG up to 2 MB, with signature checks; this is not antivirus scanning. Private bytes are omitted from workspace lists and all exports. The audit chain detects tampering against its stored hashes, but is not an externally anchored signature and does not protect against a database owner rewriting an entire chain.
 
-The workspace refuses results exceeding 1,000 rows per table rather than showing incomplete aggregates; larger deployments need pagination and server-side aggregation. Current report metrics are actual counts of the synthetic team's records. No regulatory compliance certification or measured turnaround claims are made.
+The workspace refuses results exceeding 1,000 rows per table rather than showing incomplete aggregates; larger deployments need pagination and server-side aggregation. Reports count records from the loaded team workspace. No regulatory compliance certification or measured turnaround claims are made.
 
 ## Validation
 

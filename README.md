@@ -1,6 +1,6 @@
 # JalSakshi supervisor workspace
 
-A unified, responsive Cases and Reports dashboard using React, TypeScript, Vite, Supabase Auth, and PostgreSQL. Sign-in requires a supervisor profile and assigned team. The configured environment uses persisted **synthetic** records.
+A unified, responsive Cases and Reports dashboard using React, TypeScript, Vite, Supabase Auth, and PostgreSQL. Sign-in requires a supervisor profile and assigned team. Demo records must be persisted in a compatible Supabase project before use.
 
 ## Run locally
 
@@ -43,6 +43,6 @@ npm run build
 npm run lint
 ```
 
-HTTP tests use mocked providers. Database tests roll back their fixtures. Workflow tests require the running localhost app and demo account; they retain explicitly synthetic demonstration records. Node 24 runs the TypeScript scripts directly.
+HTTP tests use mocked providers. Database tests roll back their fixtures and require the supervisor schema. Workflow tests require the running localhost app and a seeded demo account; they retain explicitly synthetic demonstration records. Run `npm run db:migrate -- --check` before seeding or testing a database. Node 24 runs the TypeScript scripts directly.
 
 The existing `jalsakshi` ingestion schema is preserved. Automatic import from that schema still requires an explicit tenant and worker identity mapping. Live mode is intentionally unavailable in this local demo. See setup notes before deployment.

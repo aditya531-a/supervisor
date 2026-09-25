@@ -1,11 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { writeFileSync } from 'node:fs'
-import { database } from './database.ts'
+import { assertSupervisorSchema, database } from './database.ts'
 const db=await database()
 const team=randomUUID(),supervisor=randomUUID(),worker=randomUUID()
 const email='demo.supervisor@jalsakshi.local'
 const password=`Jal!${randomBytes(12).toString('base64url')}`
 try{
+ await assertSupervisorSchema(db)
  await db.query('begin')
  if((await db.query('select id from auth.users where email=$1',[email])).rowCount) throw new Error('Demo user already exists; no credentials or roles changed.')
  await db.query("insert into public.teams(id,name,data_mode) values($1,'Riverside Demo District','synthetic')",[team])
@@ -23,5 +24,5 @@ try{
  }
  await db.query('commit')
  writeFileSync('.demo-credentials.local',JSON.stringify({email,password,team_id:team,supervisor_id:supervisor,worker_id:worker},null,2))
- console.log(JSON.stringify({email,password,team:'Riverside Demo District'}))
+ console.log(`Demo supervisor ${email} created. Credentials saved to .demo-credentials.local.`)
 }catch(e){await db.query('rollback');console.error(e instanceof Error?e.message:'Demo seed failed');process.exitCode=1}finally{await db.end()}

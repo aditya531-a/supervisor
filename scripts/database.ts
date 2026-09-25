@@ -9,3 +9,8 @@ export async function database() {
   await client.connect()
   return client
 }
+
+export async function assertSupervisorSchema(db: Awaited<ReturnType<typeof database>>) {
+  const { rows } = await db.query("select to_regclass('public.screening_records') is not null and exists(select 1 from information_schema.columns where table_schema='public' and table_name='teams' and column_name='data_mode') as ready")
+  if (!rows[0]?.ready) throw new Error('Configured database lacks the JalSakshi supervisor schema. Use a compatible Supabase project before running fixtures.')
+}
