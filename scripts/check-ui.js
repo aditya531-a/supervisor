@@ -50,7 +50,7 @@ async (page) => {
   await page.getByRole('alert').filter({hasText:'Check your email'}).waitFor();
   rejectLogin=false;
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
+  await page.getByRole('heading',{name:'Welcome, Ananya.'}).waitFor();
   await capture('reference-overview-after');
   assert(await page.getByRole('columnheader',{name:'Opened'}).count()===1,'Case creation date should be labeled Opened');
   assert(await page.getByRole('button',{name:'Open case RS-1043'}).count()===1,'Recent cases need a keyboard-accessible link');
@@ -76,7 +76,7 @@ async (page) => {
   await page.getByRole('button',{name:/2025-01-01/}).click();
   await page.getByRole('button',{name:'Clear dates'}).click();
   assert(await page.getByRole('button',{name:/High-Risk Alerts/}).locator('strong').textContent()==='4','Clear dates should restore the overview');
-  assert(await page.getByRole('button',{name:/Tests Today/}).count()===1,'Clearing dates should restore the daily label');
+  assert(await page.getByRole('button',{name:/Screenings Today/}).count()===1,'Clearing dates should restore the daily label');
   await nav('Labs').click();
   await page.getByRole('heading',{name:'Lab Portal'}).waitFor();
   assert(await page.getByRole('heading',{name:'Laboratory Reports'}).count()===1,'Lab view should show uploaded reports');
@@ -129,13 +129,13 @@ async (page) => {
   await page.getByRole('button',{name:'Retry loading'}).waitFor();
   failWorkspace=false;
   await page.getByRole('button',{name:'Retry loading'}).click();
-  await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
+  await page.getByRole('heading',{name:'Welcome, Ananya.'}).waitFor();
   failSession=true;
   await page.reload();
   await page.getByRole('button',{name:'Retry connection'}).waitFor();
   failSession=false;
   await page.getByRole('button',{name:'Retry connection'}).click();
-  await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
+  await page.getByRole('heading',{name:'Welcome, Ananya.'}).waitFor();
   assert(errors.length===0,'Browser errors: '+errors.join('; '));
   console.log('Reference UI checks passed: auth, overview, lab queue, responsive widths, case review, reports export.');
 }
