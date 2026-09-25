@@ -107,6 +107,7 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 12px 0
 .reports-layout { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(270px,.85fr); gap: 20px; align-items: start; }
 .reports-summary { background: #fff; padding: 30px; border: 1px solid var(--line); border-radius: var(--radius); }
 .reports-summary h2 { font-size: 21px; font-weight: 750; letter-spacing: -.5px; color: var(--ink); }
+.reports-summary h3 { margin-top: 32px; font-size: 17px; color: var(--ink); }
 .reports-summary p { font-size: 13px; line-height: 1.9; color: var(--muted); margin: 13px 0; }
 .reports-summary table { border-collapse: collapse; width: 100%; margin-top: 28px; text-align: left; font-size: 13px; }
 .reports-summary th, .reports-summary td { padding: 19px 0; border-bottom: 1px solid #e3eae4; }

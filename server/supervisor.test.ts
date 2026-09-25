@@ -31,15 +31,17 @@ test('workers cannot obtain a supervisor session',()=>server(async(base,setRole)
 test('role changes invalidate access on the next authenticated request',()=>server(async(base,setRole)=>{const response=await login(base);assert.equal(response.status,200);const cookie=response.headers.get('set-cookie')!.split(';')[0];setRole('worker');const next=await fetch(base+'/api/supervisor/workspace',{headers:{Cookie:cookie}});assert.equal(next.status,403)}))
 test('export uses user RLS token and excludes private values and spreadsheet formulas',()=>server(async base=>{const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0];const exported=await fetch(base+'/api/supervisor/export',{headers:{Cookie:cookie}});assert.equal(exported.status,200);const csv=await exported.text();assert.match(csv,/(synthetic|live),under_review,1/);assert(!/PRIVATE|HYPERLINK|supervisor@example|private-access/.test(csv));assert.equal(csv.trim().split('\r\n').length,7)}))
 test('plain case PATCH is rejected even with a valid supervisor session',()=>server(async base=>{const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0];const patch=await fetch(base+'/api/supervisor/cases',{method:'PATCH',headers:{Cookie:cookie,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({status:'closed'})});assert.equal(patch.status,405)}))
-test('metrics, test-kits, team, and leaderboards endpoints return valid JSON responses',()=>server(async base=>{
+test('workspace load fails when team records are unavailable',()=>server(async base=>{
   const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0]
-  const metrics=await (await fetch(base+'/api/supervisor/metrics',{headers:{Cookie:cookie}})).json() as {cases_open:number}
-  assert(metrics.cases_open >= 1)
-  const kits=await (await fetch(base+'/api/supervisor/test-kits',{headers:{Cookie:cookie}})).json() as {test_kits:unknown[]}
-  assert.equal(kits.test_kits.length,4)
-  const team=await (await fetch(base+'/api/supervisor/team',{headers:{Cookie:cookie}})).json() as {members:unknown[]}
-  assert.equal(team.members.length,3)
-  const lb=await (await fetch(base+'/api/supervisor/leaderboards/field-workers',{headers:{Cookie:cookie}})).json() as {disclaimer:string}
-  assert.match(lb.disclaimer,/Points reward reporting/)
+  const workspace=await fetch(base+'/api/supervisor/workspace',{headers:{Cookie:cookie}})
+  assert.equal(workspace.status,503)
+  assert(!/Patel Nagar Hand Pump/.test(await workspace.text()))
+}))
+test('unsupported reporting endpoints cannot return fabricated team records',()=>server(async base=>{
+  const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0]
+  for(const path of ['metrics','test-kits','team','leaderboards/field-workers','rewards']) {
+    const result=await fetch(base+'/api/supervisor/'+path,{headers:{Cookie:cookie}})
+    assert.equal(result.status,405,path)
+  }
 }))
 

@@ -93,6 +93,19 @@ test('provider outage fails closed and does not leak upstream diagnostics', asyn
   })
 })
 
+test('demo-looking credentials still require provider authentication', async () => {
+  await withServer(() => json({ error: 'invalid_grant' }, 400), async base => {
+    for (const body of [
+      { email: 'demo.supervisor@jalsakshi.local', password: 'demo1234' },
+      { email: 'anyone@example.org', password: 'demo' },
+    ]) {
+      const response = await login(base, body)
+      assert.equal(response.status, 401)
+      assert.equal(response.headers.get('set-cookie'), null)
+    }
+  })
+})
+
 test('revoked provider credentials invalidate the local session', async () => {
   await withServer(url => String(url).includes('/token') ? success() : json({ error: 'invalid_token' }, 401), async base => {
     const response = await login(base)

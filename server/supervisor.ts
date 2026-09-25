@@ -4,40 +4,6 @@ import type { AuthConfig } from './config.ts'
 export interface Principal { id: string; email: string; role: 'supervisor'; team_id: string; team_name: string; dataMode: string }
 export class AccessError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status } }
 
-export const DEMO_PROFILE: Principal = {
-  id: '00000000-0000-0000-0000-000000000001',
-  email: 'demo.supervisor@jalsakshi.local',
-  role: 'supervisor',
-  team_id: '00000000-0000-0000-0000-000000000002',
-  team_name: 'Riverside Demo District',
-  dataMode: 'synthetic',
-}
-
-const SYNTHETIC_DATA = {
-  water_sources: [
-    { id: 'src-1', team_id: DEMO_PROFILE.team_id, name: 'Patel Nagar Hand Pump', locality: 'Kalyanpur · Ward 4', version: 1 },
-    { id: 'src-2', team_id: DEMO_PROFILE.team_id, name: 'Shanti Nagar Borewell', locality: 'Near primary health centre', version: 1 },
-    { id: 'src-3', team_id: DEMO_PROFILE.team_id, name: 'Govt Primary School Tube Well', locality: 'Sector 4', version: 1 },
-  ],
-  cases: [
-    { id: 'c1010000-0000-0000-0000-000000000001', team_id: DEMO_PROFILE.team_id, source_id: 'src-1', screening_id: 'scr-1', origin: 'screening', status: 'under_review', priority: 'urgent', created_at: new Date(Date.now() - 7200000).toISOString(), version: 1, closed_at: null, closure_reason: null },
-    { id: 'c1020000-0000-0000-0000-000000000002', team_id: DEMO_PROFILE.team_id, source_id: 'src-2', screening_id: 'scr-2', origin: 'screening', status: 'under_review', priority: 'critical', created_at: new Date(Date.now() - 50400000).toISOString(), version: 1, closed_at: null, closure_reason: null },
-    { id: 'c1030000-0000-0000-0000-000000000003', team_id: DEMO_PROFILE.team_id, source_id: 'src-3', screening_id: 'scr-3', origin: 'screening', status: 'closed', priority: 'normal', created_at: new Date(Date.now() - 172800000).toISOString(), version: 1, closed_at: new Date(Date.now() - 86400000).toISOString(), closure_reason: 'Verified lab report' },
-  ],
-  screening_records: [
-    { id: 'scr-1', source_id: 'src-1', sample_code: 'DEMO-SAMPLE-1', machine_suggestion: 'Low residual chlorine', human_observation: 'Cracked drainage apron.', screening_flag: 'flagged', captured_at: new Date(Date.now() - 7200000).toISOString(), created_by: 'worker-1', capture_name: null },
-    { id: 'scr-2', source_id: 'src-2', sample_code: 'DEMO-SAMPLE-2', machine_suggestion: 'Image confidence low', human_observation: 'Unusual odour.', screening_flag: 'uncertain', captured_at: new Date(Date.now() - 50400000).toISOString(), created_by: 'worker-1', capture_name: null },
-  ],
-  lab_reports: [],
-  case_actions: [],
-  retests: [],
-  resident_communications: [],
-  ivr_complaints: [
-    { id: 'ivr-1', source_id: 'src-1', case_id: null, summary: 'Caller reported intermittent odour near hand pump.', status: 'new', received_at: new Date().toISOString(), version: 1 },
-  ],
-  audit_log: [],
-}
-
 export function restClient(config: AuthConfig, accessToken: string, request = fetch) {
   return (path: string, options: RequestInit = {}) => request(`${config.supabaseUrl}/rest/v1/${path}`, {
     ...options, headers: { apikey: config.publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -88,7 +54,6 @@ export async function supervisorApi(req: IncomingMessage, res: ServerResponse, c
     if (table === 'audit_log') params.set('order','sequence.asc')
     const result = await rest(`${table}?${params}`)
     if (!result.ok) {
-      if (result.status === 404 || result.status === 400) return []
       throw new AccessError(503, 'Unable to load team records. Please retry or contact your administrator.')
     }
     const rows = await result.json() as unknown[]
@@ -97,16 +62,9 @@ export async function supervisorApi(req: IncomingMessage, res: ServerResponse, c
   }
   try {
     if (path === 'workspace' && req.method === 'GET') {
-      try {
-        const tables = Object.keys(selections)
-        const data = await Promise.all(tables.map(async table => [table, await getRows(table)]))
-        return reply(200, { ...Object.fromEntries(data), profile: principal })
-      } catch (err) {
-        if (principal.dataMode === 'synthetic' || token === 'demo-token') {
-          return reply(200, { ...SYNTHETIC_DATA, profile: principal })
-        }
-        throw err
-      }
+      const tables = Object.keys(selections)
+      const data = await Promise.all(tables.map(async table => [table, await getRows(table)]))
+      return reply(200, { ...Object.fromEntries(data), profile: principal })
     }
 
     if (path === 'export' && req.method === 'GET') {
@@ -116,93 +74,6 @@ export async function supervisorApi(req: IncomingMessage, res: ServerResponse, c
       res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="jalsakshi-safe-summary.csv"')
       res.end(rows.map(row => row.join(',')).join('\r\n'));return
     }
-    if (path === 'metrics' && req.method === 'GET') {
-      let cases: Array<{ status: string; priority: string; created_at: string; closed_at: string | null }> = []
-      let screeningsCount = 0
-      try {
-        cases = await getRows('cases') as typeof cases
-        const screenings = await getRows('screening_records')
-        screeningsCount = screenings.length
-      } catch {
-        cases = SYNTHETIC_DATA.cases
-        screeningsCount = SYNTHETIC_DATA.screening_records.length
-      }
-      const closedCases = cases.filter(c => c.status === 'closed' && c.closed_at && c.created_at)
-      const totalClosureMs = closedCases.reduce((sum, c) => sum + (new Date(c.closed_at!).getTime() - new Date(c.created_at).getTime()), 0)
-      const avgClosureHours = closedCases.length ? Math.round((totalClosureMs / closedCases.length / (1000 * 60 * 60)) * 10) / 10 : 0
-      return reply(200, {
-        team_id: principal.team_id, team_name: principal.team_name, data_mode: principal.dataMode,
-        tests_done: screeningsCount,
-        cases_open: cases.filter(c => c.status === 'under_review').length,
-        cases_closed: closedCases.length,
-        avg_closure_time_hours: avgClosureHours,
-        cases_by_priority: {
-          normal: cases.filter(c => c.priority === 'normal').length,
-          urgent: cases.filter(c => c.priority === 'urgent').length,
-          critical: cases.filter(c => c.priority === 'critical').length,
-        }
-      })
-    }
-    if (path.startsWith('reports/') && path.endsWith('/audit') && req.method === 'GET') {
-      const parts = path.split('/')
-      const reportId = parts[1]
-      let auditLogs: Array<{ id: string; entity_id: string; event: string; occurred_at: string; actor_id: string }> = []
-      try {
-        const rows = await getRows('audit_log') as typeof auditLogs
-        auditLogs = rows.filter(r => r.entity_id === reportId)
-      } catch {
-        auditLogs = []
-      }
-      return reply(200, { case_id: reportId, audit_events: auditLogs })
-    }
-    if (path === 'test-kits' && req.method === 'GET') {
-      return reply(200, {
-        test_kits: [
-          { id: 'kit-1', name: 'H2S Bacteriological Test Vial', code: 'H2S-BACT', parameter: 'Pathogenic Bacteria', unit: 'Absence/Presence', expiry_days: 180 },
-          { id: 'kit-2', name: 'Free Residual Chlorine Dropper Kit', code: 'CL-FREE', parameter: 'Residual Chlorine', unit: 'mg/L (PPM)', expiry_days: 90 },
-          { id: 'kit-3', name: 'Fluoride Photometer Test Strips', code: 'FL-PHOTO', parameter: 'Fluoride', unit: 'mg/L', expiry_days: 365 },
-          { id: 'kit-4', name: 'Turbidity & pH Dual Field Probe', code: 'TURB-PH', parameter: 'Turbidity & pH', unit: 'NTU / pH', expiry_days: 365 }
-        ]
-      })
-    }
-    if (path === 'team' && req.method === 'GET') {
-      return reply(200, {
-        team_id: principal.team_id,
-        team_name: principal.team_name,
-        members: [
-          { id: principal.id, email: principal.email, role: 'supervisor', status: 'active', name: principal.email.split('@')[0] },
-          { id: 'worker-1', email: 'field.worker1@jalsakshi.local', role: 'field_worker', name: 'Aarav Sharma', assigned_sources_count: 2, status: 'active' },
-          { id: 'worker-2', email: 'field.worker2@jalsakshi.local', role: 'field_worker', name: 'Priya Patel', assigned_sources_count: 1, status: 'active' }
-        ]
-      })
-    }
-    if ((path === 'leaderboards/field-workers' || path === 'leaderboards/locations') && req.method === 'GET') {
-      return reply(200, {
-        disclaimer: 'Points reward reporting; they are not a water-safety signal',
-        field_workers: [
-          { rank: 1, id: 'worker-1', name: 'Aarav Sharma', tests_completed: 24, cases_flagged: 3, points: 240 },
-          { rank: 2, id: 'worker-2', name: 'Priya Patel', tests_completed: 18, cases_flagged: 2, points: 180 }
-        ],
-        locations: [
-          { rank: 1, locality: 'Kalyanpur · Ward 4', sources_monitored: 3, test_frequency_per_month: 12, safety_rate_percent: 92 },
-          { rank: 2, locality: 'Sector 4', sources_monitored: 2, test_frequency_per_month: 8, safety_rate_percent: 88 }
-        ]
-      })
-    }
-    if ((path === 'sponsors' || path === 'rewards') && req.method === 'GET') {
-      return reply(200, {
-        disclaimer: 'Points reward reporting; they are not a water-safety signal',
-        sponsors: [
-          { id: 'sp-1', name: 'Jal Jeevan Mission NGO', tier: 'Gold', active_rewards: 3 },
-          { id: 'sp-2', name: 'CleanWater Foundation', tier: 'Platinum', active_rewards: 2 }
-        ],
-        rewards: [
-          { id: 'rew-1', title: '₹100 Mobile Recharge Coupon', sponsor_id: 'sp-1', points_cost: 100, stock: 50, claimed: 12 },
-          { id: 'rew-2', title: 'Water Filter Cartridge Discount Voucher', sponsor_id: 'sp-2', points_cost: 250, stock: 20, claimed: 5 }
-        ]
-      })
-    }
-
     if (path.startsWith('files/') && req.method === 'GET') {
       const [,table,id] = path.split('/')
       if (!['lab_reports','case_actions','screening_records'].includes(table) || !uuid.test(id || '')) throw new AccessError(400,'Invalid attachment request.')

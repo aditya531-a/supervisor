@@ -1,9 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import type { Connect } from 'vite'
 import type { AuthConfig } from './config.ts'
-import { supervisorProfile, supervisorApi, AccessError, DEMO_PROFILE } from './supervisor.ts'
+import { supervisorProfile, supervisorApi, AccessError } from './supervisor.ts'
 
-type Session = { accessToken: string; expires: number; isDemo?: boolean }
+type Session = { accessToken: string; expires: number }
 
 // Sessions live in an AES-GCM sealed cookie so any serverless instance can read them; the browser cannot.
 function seal(session: Session, key: Buffer) {
@@ -44,11 +44,6 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       }
       const session = unseal(token, config.sessionKey)
       if (!session) return reply(401, { error: 'Sign in to continue.' })
-      if (session.isDemo) {
-        const profile = DEMO_PROFILE
-        if (req.url.startsWith('/api/supervisor/')) return await supervisorApi(req, res, config, session.accessToken, profile, request)
-        return reply(200, profile)
-      }
       try {
         const response = await upstream('/user', {}, session.accessToken)
         if (response.status === 401 || response.status === 403) {
@@ -63,10 +58,6 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
         return reply(200, profile)
       } catch(error) {
         if(error instanceof AccessError) return reply(error.status,{error:error.message})
-        if(config.environment === 'development') {
-          if (req.url.startsWith('/api/supervisor/')) return await supervisorApi(req, res, config, session.accessToken, DEMO_PROFILE, request)
-          return reply(200, DEMO_PROFILE)
-        }
         return reply(503, { error: 'Unable to reach authentication. Please try again.' })
       }
     }
@@ -78,7 +69,7 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       const session = unseal(token, config.sessionKey)
       res.setHeader('Set-Cookie', cookie('', 0))
       // Revoking upstream invalidates the sealed cookie's token; local sign-out succeeds even during a provider outage.
-      if (session && !session.isDemo) {
+      if (session) {
         try { await upstream('/logout?scope=local', { method: 'POST' }, session.accessToken) } catch { /* Local session already invalidated. */ }
       }
       return reply(200, { ok: true })
@@ -98,12 +89,6 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       input = JSON.parse(body)
       if (!input || typeof input.email !== 'string' || !input.email.trim() || typeof input.password !== 'string' || !input.password) return reply(400, { error: 'Enter your email and password.' })
     } catch { return reply(400, { error: 'Invalid request.' }) }
-    if (config.environment === 'development' && ((input.email as string).trim() === 'demo.supervisor@jalsakshi.local' || input.password === 'demo1234' || input.password === 'demo' || input.password === '1234')) {
-      const maxAge = 28800
-      attempts.delete(ip)
-      res.setHeader('Set-Cookie', cookie(seal({ accessToken: 'demo-token', expires: Date.now() + maxAge * 1000, isDemo: true }, config.sessionKey), maxAge))
-      return reply(200, DEMO_PROFILE)
-    }
     try {
       const response = await upstream('/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: (input.email as string).trim(), password: input.password }) })
       if (response.status === 429) return reply(429, { error: 'Too many sign-in attempts. Please try again later.' })
@@ -123,12 +108,6 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       return reply(200, profile)
     } catch(error) {
       if(error instanceof AccessError) return reply(error.status,{error:error.message})
-      if (config.environment === 'development' && ((input?.email as string)?.trim() === 'demo.supervisor@jalsakshi.local' || input?.password === 'demo1234')) {
-        const maxAge = 28800
-        attempts.delete(ip)
-        res.setHeader('Set-Cookie', cookie(seal({ accessToken: 'demo-token', expires: Date.now() + maxAge * 1000, isDemo: true }, config.sessionKey), maxAge))
-        return reply(200, DEMO_PROFILE)
-      }
       return reply(503, { error: 'Unable to reach authentication. Please try again.' })
     }
 
