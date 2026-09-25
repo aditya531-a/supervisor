@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build --config vite.build.config.ts",
     "lint": "oxlint",
     "preview": "vite preview",
+    "start": "node server/index.ts",
     "test": "node --test server/auth.test.ts server/supervisor.test.ts",
     "test:database": "node --env-file=.env scripts/test-database.ts",
     "test:workflow": "node --env-file=.env scripts/test-workflow.ts",

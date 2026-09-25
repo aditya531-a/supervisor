@@ -24,18 +24,20 @@ async function withServer(provider: typeof fetch, run: (base: string) => Promise
   assert(address && typeof address === 'object')
   try { await run(`http://127.0.0.1:${address.port}`) } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())) }
 }
-const login = (base: string, body = { email: 'test@example.org', password: 'test-password' }) => fetch(`${base}/api/auth/login`, { method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+const login = (base: string, body = { email: 'test@example.org', password: 'test-password' }) => fetch(`${base}/api/auth/login?from=test`, { method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
 test('configuration rejects missing keys, Markdown, secret keys, and unsupported live data', () => {
   assert.throws(() => readConfig({}), /Set JALSAKSHI/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_SUPABASE_URL: '[https://example.supabase.co](https://example.supabase.co)' }), /plain HTTPS/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_unsafe' }), /publishable key/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_TENANT_DATA_MODE: 'live' }), /synthetic/)
-  assert.equal(readConfig({ ...env, JALSAKSHI_ENVIRONMENT: 'production' }).secureCookie, true)
+  assert.throws(() => readConfig({ ...env, JALSAKSHI_ENVIRONMENT: 'production' }), /SESSION_SECRET/)
+  assert.equal(readConfig({ ...env, JALSAKSHI_ENVIRONMENT: 'production', JALSAKSHI_SESSION_SECRET: 'x'.repeat(32) }).secureCookie, true)
 })
 
 test('Supabase login, provider validation, opaque cookie, and logout invalidation', async () => {
   const calls: string[] = []
+  let revoked = false
   await withServer(async (url, options) => {
     calls.push(String(url))
     assert.equal(new Headers(options?.headers).get('apikey'), config.publishableKey)
@@ -44,7 +46,9 @@ test('Supabase login, provider validation, opaque cookie, and logout invalidatio
       return success()
     }
     assert.equal(new Headers(options?.headers).get('Authorization'), 'Bearer provider-secret-token')
-    return String(url).endsWith('/user') ? json({ id: 'test-user', email: 'test@example.org' }) : new Response(null, { status: 204 })
+    if (String(url).endsWith('/logout?scope=local')) revoked = true
+    if (String(url).endsWith('/user')) return revoked ? json({ error: 'session_not_found' }, 403) : json({ id: 'test-user', email: 'test@example.org' })
+    return new Response(null, { status: 204 })
   }, async base => {
     assert.equal((await fetch(`${base}/api/auth/session`)).status, 401)
     const response = await login(base)
@@ -56,6 +60,7 @@ test('Supabase login, provider validation, opaque cookie, and logout invalidatio
     assert.match(header, /Max-Age=3600/)
     assert(!header.includes('provider-secret-token'))
     const cookie = header.split(';')[0]
+    assert.equal((await fetch(`${base}/api/auth/session`, { headers: { Cookie: cookie.slice(0, -2) + 'AA' } })).status, 401)
     assert.equal((await fetch(`${base}/api/auth/session`, { headers: { Cookie: cookie } })).status, 200)
     assert.equal((await fetch(`${base}/api/auth/logout`, { method: 'POST', headers: { Origin: base, Cookie: cookie } })).status, 200)
     assert.equal((await fetch(`${base}/api/auth/session`, { headers: { Cookie: cookie } })).status, 401)

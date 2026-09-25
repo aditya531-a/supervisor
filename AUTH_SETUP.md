@@ -18,9 +18,13 @@ The provisioned demo supervisor belongs to **Riverside Demo District**, with syn
 
 For other users, an administrator must create a confirmed Supabase Auth user, a team, and a `public.profiles` row containing that user's ID, `role='supervisor'`, and the assigned `team_id`. Users cannot grant themselves a role. Workers cannot sign in to this dashboard.
 
-The backend exchanges the password with Supabase and retains the access token in memory. The browser receives only an opaque HttpOnly, SameSite=Strict session cookie. Every authenticated request revalidates the provider user and supervisor/team profile. Requests to PostgREST use that user's token and PostgreSQL RLS; no database owner or service-role credentials serve dashboard requests.
+The backend exchanges the password with Supabase and seals the access token (AES-256-GCM, keyed by `JALSAKSHI_SESSION_SECRET`) into an HttpOnly, SameSite=Strict cookie the browser cannot read. Sign-out revokes the token at Supabase. Every authenticated request revalidates the provider user and supervisor/team profile. Requests to PostgREST use that user's token and PostgreSQL RLS; no database owner or service-role credentials serve dashboard requests.
 
-Access-token expiry (at most eight hours), revocation, or a server restart requires another sign-in. Refresh tokens are not retained. Multi-instance deployment requires a shared session store and an application backend; static hosting alone cannot supply the API.
+Access-token expiry (at most eight hours), revocation, or changing the session secret requires another sign-in. Refresh tokens are not retained.
+
+## Vercel
+
+`api/index.js` serves `/api/*` with the same handler as the dev server. In Project Settings > Environment Variables set `JALSAKSHI_ENVIRONMENT=production`, `JALSAKSHI_SUPABASE_URL`, `JALSAKSHI_SUPABASE_PUBLISHABLE_KEY`, and `JALSAKSHI_SESSION_SECRET`, then redeploy. The login-attempt limiter is per instance; Supabase's own rate limits still apply.
 
 ## Migrations
 

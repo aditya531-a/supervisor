@@ -15,16 +15,9 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (profil
     setPending(true);
     setError('');
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        setError(result.error || 'Unable to sign in. Check your details and try again.');
-        return;
-      }
+      const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), password }) });
+      const result = await response.json().catch(() => ({ error: `Server error (${response.status}): the sign-in API did not respond.` }));
+      if (!response.ok) { setError(result.error || 'Unable to sign in. Check your details and try again.'); return; }
       onAuthenticated(result);
     } catch {
       setError('Unable to connect. Check your connection and try again.');
