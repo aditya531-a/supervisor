@@ -40,8 +40,10 @@
 .text-button { display:inline-flex; align-items:center; gap:7px; min-height:38px; padding:4px 0; border:0; background:none; color:var(--accent); font-size:12px; font-weight:800; text-align:left; }
 .text-button:hover { color:var(--accent-dark); text-decoration:underline; }
 .auth-loading { display:grid; place-items:center; min-height:100dvh; color:var(--muted); }
+.auth-unavailable { align-content:center; gap:16px; padding:24px; text-align:center; }
 .session-error { padding:12px 20px; background:#fff0ec; color:#913c2b; font-size:13px; }
 .workspace-loading { padding:36px 0; color:var(--muted); font-size:13px; }
+.workspace-error { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .reference-workspace { --ref-navy:#10234e; --ref-blue:#0768d7; --ref-line:#dce8f8; display:flex; min-height:100dvh; background:#fffefa; color:var(--ref-navy); font-family:'Manrope Variable',Arial,sans-serif; }
 .reference-workspace button, .reference-workspace select { font-family:inherit; }
 .reference-sidebar { position:sticky; top:0; z-index:20; flex:0 0 262px; height:100dvh; overflow:hidden; border-right:1px solid #e4ebf6; background:#fffefa; }

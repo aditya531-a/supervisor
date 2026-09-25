@@ -5,6 +5,8 @@ async (page) => {
   page.on('pageerror', error => errors.push(error.message));
   let authenticated = false;
   let rejectLogin = true;
+  let failSession = false;
+  let failWorkspace = false;
   const profile = { id:'supervisor-demo', email:'ananya.rao@example.test', role:'supervisor', team_id:'team-demo', team_name:'Riverside District', dataMode:'synthetic' };
   const timestamp = '2026-09-22T09:30:00.000Z';
   const names = ['Kalyanpur Hand Pump','Devnadi Community Tap','Patel Nagar Borewell','Nirmalpur Tank','Sundargram Well','Chandipur Anganwadi'];
@@ -19,10 +21,10 @@ async (page) => {
   await page.unroute('**/api/**');
   await page.route('**/api/**', async route => {
     const path=route.request().url().replace(/^https?:\/\/[^/]+/,'').split('?')[0];
-    if(path==='/api/auth/session') return route.fulfill({status:authenticated?200:401,json:authenticated?profile:{error:'Sign in required.'}});
+    if(path==='/api/auth/session') return route.fulfill({status:failSession?503:authenticated?200:401,json:failSession?{error:'Service unavailable.'}:authenticated?profile:{error:'Sign in required.'}});
     if(path==='/api/auth/login') { if(rejectLogin) return route.fulfill({status:401,json:{error:'Check your email and password, then try again.'}}); authenticated=true; return route.fulfill({json:profile}); }
     if(path==='/api/auth/logout') {authenticated=false;return route.fulfill({json:{ok:true}});}
-    if(path==='/api/supervisor/workspace') return route.fulfill({json:workspace});
+    if(path==='/api/supervisor/workspace') return failWorkspace?route.fulfill({status:503,json:{error:'Unable to load team records.'}}):route.fulfill({json:workspace});
     if(path==='/api/supervisor/export') return route.fulfill({contentType:'text/csv',body:'data_mode,metric,count\nsynthetic,total_cases,6\n'});
     if(path==='/api/supervisor/rpc/verify_case_audit') return route.fulfill({json:{valid:true}});
     return route.fulfill({status:400,json:{error:'Fixture mutation is not persisted.'}});
@@ -111,6 +113,18 @@ async (page) => {
   const downloadEvent=page.waitForEvent('download');
   await page.getByRole('button',{name:'Export aggregate CSV'}).click();
   assert((await downloadEvent).suggestedFilename()==='jalsakshi-safe-summary.csv','CSV export failed');
+  failWorkspace=true;
+  await page.reload();
+  await page.getByRole('button',{name:'Retry loading'}).waitFor();
+  failWorkspace=false;
+  await page.getByRole('button',{name:'Retry loading'}).click();
+  await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
+  failSession=true;
+  await page.reload();
+  await page.getByRole('button',{name:'Retry connection'}).waitFor();
+  failSession=false;
+  await page.getByRole('button',{name:'Retry connection'}).click();
+  await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
   assert(errors.length===0,'Browser errors: '+errors.join('; '));
   console.log('Reference UI checks passed: auth, overview, lab queue, responsive widths, case review, reports export.');
 }

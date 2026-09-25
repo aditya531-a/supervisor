@@ -102,7 +102,7 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
         <button className="reference-topbar__profile" onClick={() => navigate('settings')}><span className="reference-avatar">{profile.email[0].toUpperCase()}</span><span><strong>{profile.email.split('@')[0]}</strong><small>Supervisor</small></span><ChevronDown size={16} /></button>
       </header>
       <main className="reference-main" id="main-content">
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && <div className="form-error workspace-error" role="alert"><span>{error}</span><button className="secondary-button" disabled={loading} onClick={() => { setLoading(true); void load(); }}>Retry loading</button></div>}
         {notice && <p className="save-notice" role="status">{notice}</p>}
         {!data && !error && <p className="workspace-loading" role="status">Loading your team’s cases…</p>}
         {periodData && screen === 'overview' && <OverviewView data={periodData} periodActive={Boolean(startDate && endDate)} onNavigate={navigate} onOpenCase={openCase} onOpenComplaint={openComplaint} />}
@@ -120,15 +120,17 @@ export default function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sessionUnavailable, setSessionUnavailable] = useState(false);
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
       try {
         const response = await fetch('/api/auth/session');
         if (cancelled) return;
-        if (response.ok) { setProfile(await response.json()); setError(''); }
-        else if (response.status === 401 || response.status === 403) { setProfile(null); if (response.status === 403) setError((await response.json()).error); }
-      } catch { if (!cancelled) setError('Unable to reach the server. Check your connection and refresh.'); }
+        if (response.ok) { setProfile(await response.json()); setError(''); setSessionUnavailable(false); }
+        else if (response.status === 401 || response.status === 403) { setProfile(null); setSessionUnavailable(false); setError(response.status === 403 ? (await response.json()).error : ''); }
+        else { setError('Unable to verify your session. Please retry.'); setSessionUnavailable(true); }
+      } catch { if (!cancelled) { setError('Unable to reach the server. Check your connection and retry.'); setSessionUnavailable(true); } }
       finally { if (!cancelled) setLoading(false); }
     };
     void check(); const timer = window.setInterval(check, 60000);
@@ -139,5 +141,6 @@ export default function App() {
     catch { setError('Could not sign out. Please try again.'); }
   };
   if (loading) return <div className="auth-loading" role="status">Loading your workspace…</div>;
-  return <>{error && <div className="session-error" role="alert">{error}</div>}{profile ? <Dashboard profile={profile} onLogout={logout} /> : <AuthGate onAuthenticated={setProfile} />}</>;
+  if (sessionUnavailable && !profile) return <div className="auth-loading auth-unavailable" role="alert"><p>{error}</p><button className="secondary-button" onClick={() => window.location.reload()}>Retry connection</button></div>;
+  return <>{error && <div className="session-error" role="alert">{error}</div>}{profile ? <Dashboard profile={profile} onLogout={logout} /> : <AuthGate onAuthenticated={authenticated => { setProfile(authenticated); setError(''); setSessionUnavailable(false); }} />}</>;
 }
