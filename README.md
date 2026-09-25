@@ -11,6 +11,16 @@ npm run dev -- --host 127.0.0.1 --port 5175
 
 Open http://127.0.0.1:5175/. Environment and account details are documented in [AUTH_SETUP.md](./AUTH_SETUP.md). Demo credentials are saved only in the ignored `.demo-credentials.local` file.
 
+To serve the built dashboard and API together from the standalone server (including through ngrok):
+
+```sh
+npm run build
+node --env-file=.env server/index.ts
+ngrok http 3000
+```
+
+Open the ngrok HTTPS URL at `/`. The standalone server serves the dashboard there and keeps API routes under `/api/`.
+
 ## Implemented workflows
 
 - Team-scoped case queue, status/priority filters, source metadata and full screening history.
