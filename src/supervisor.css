@@ -99,6 +99,7 @@ summary { cursor: pointer; min-height: 44px; display: list-item; padding: 12px 0
 .audit-timeline pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2f7f8; padding: 14px; font-size: 11px; color: #355d6b; }
 .ivr-section { margin-top: 23px; padding: 27px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
 .ivr-section .record-entry { max-width: 850px; }
+.ivr-section .record-entry:focus { outline: 3px solid var(--accent); outline-offset: 4px; }
 .ivr-section .workflow-form { max-width: 650px; }
 .mobile-back { display: none; }
 .team-submissions { padding: 12px 26px; margin-top: 23px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); color: var(--muted); font-size: 13px; }

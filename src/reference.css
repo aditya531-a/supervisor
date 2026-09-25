@@ -65,7 +65,6 @@
 .reference-search { position:relative; display:flex; align-items:center; flex:1; min-width:120px; height:41px; padding:0 14px; border:1px solid #c9dcf6; border-radius:9px; color:#173c7b; }
 .reference-search input { min-width:0; width:100%; height:100%; padding:0 12px; border:0; outline:0; background:transparent; color:#183565; font-size:13px; }
 .reference-search input::placeholder { color:#627599; opacity:1; }
-.reference-search kbd { flex:none; padding:3px 8px; border:1px solid #dbe5f4; border-radius:5px; color:#6a7c9f; white-space:nowrap; font-size:11px; }
 .reference-search__results { position:absolute; top:47px; left:0; right:0; z-index:30; overflow:hidden; border:1px solid #c9dcf6; border-radius:9px; background:white; box-shadow:0 12px 24px #18356524; }
 .reference-search__results button { display:grid; width:100%; padding:9px 12px; border:0; border-bottom:1px solid #e9f0fa; background:white; text-align:left; }
 .reference-search__results button:hover { background:#eef6ff; }
@@ -77,7 +76,7 @@
 .reference-date-wrap { position:relative; }
 .reference-topbar__date { width:250px; }
 .reference-topbar__date span { overflow:hidden; text-overflow:ellipsis; }
-.reference-date-popover { position:absolute; top:47px; right:0; display:grid; gap:10px; width:250px; padding:14px; border:1px solid #c9dcf6; border-radius:9px; background:white; box-shadow:0 12px 24px #18356524; }
+.reference-date-popover { position:absolute; z-index:30; top:47px; right:0; display:grid; gap:10px; width:250px; padding:14px; border:1px solid #c9dcf6; border-radius:9px; background:white; box-shadow:0 12px 24px #18356524; }
 .reference-date-popover label { display:grid; gap:4px; font-size:12px; }
 .reference-date-popover input { padding:8px; border:1px solid #c9dcf6; border-radius:6px; }
 .reference-date-popover button { min-height:34px; border:1px solid #c9dcf6; border-radius:6px; background:#edf6ff; color:#075dc3; }
@@ -149,6 +148,8 @@
 .reference-simple-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px; }
 .reference-source-card { display:flex; align-items:center; gap:12px; min-height:82px; padding:12px; border:1px solid #d9e6f8; border-radius:9px; background:white; color:#1a3f80; text-align:left; }
 .reference-source-card > span { display:grid; flex:1; min-width:0; overflow-wrap:anywhere; }.reference-source-card small { color:#607397; }
+.reference-source-card > button { flex:none; min-height:32px; padding:5px 8px; border:1px solid #cbdcf1; border-radius:6px; background:white; color:#075bbc; font-size:11px; font-weight:700; }
+.reference-sources-clear { margin-bottom:12px; }
 .reference-settings { max-width:560px; padding:25px; border:1px solid #d9e6f8; border-radius:10px; background:white; }
 .reference-settings h2 { font-family:'Playfair Display',Georgia,serif; }
 .reference-settings dl div { display:flex; justify-content:space-between; gap:10px; padding:12px 0; border-bottom:1px solid #e5edf8; }
@@ -262,7 +263,7 @@
   .is-lab .reference-main-column { width:100%; }.is-lab .reference-main { padding:0 12px 35px; }
   .reference-sidebar { position:fixed; left:0; top:0; width:260px; height:100dvh; transform:translateX(-100%); transition:transform .2s ease; }.reference-sidebar.is-open { transform:none; }.reference-sidebar__scene { display:none; }.reference-menu-scrim { position:fixed; z-index:18; inset:0; display:block; width:100%; border:0; background:#0a204c88; }.reference-main-column { width:100%; }
   .reference-menu-button { display:grid; place-items:center; flex:none; width:34px; height:38px; border:0; background:none; color:#143467; }
-  .reference-topbar { gap:7px; height:58px; padding:8px 12px; }.reference-topbar__district,.reference-topbar__date,.reference-topbar__sync,.reference-topbar__profile { display:none; }.reference-search { height:38px; }.reference-search kbd { display:none; }.reference-search input { font-size:12px; }
+  .reference-topbar { gap:7px; height:58px; padding:8px 12px; }.reference-topbar__district,.reference-topbar__sync,.reference-topbar__profile { display:none; }.reference-topbar__date { width:38px; height:38px; padding:0; justify-content:center; }.reference-topbar__date > svg:last-child { display:none; }.reference-search { height:38px; }.reference-search input { font-size:12px; }
   .reference-main { padding:0 12px 35px; }.reference-page-heading { min-height:84px; }.reference-page-heading h1,.reference-subheading h1 { font-size:34px; }.reference-page-heading p:not(.reference-quote) { font-size:12px; }
   .reference-kpi { min-height:79px; }.reference-kpi__icon { width:42px; height:45px; }.reference-kpi__icon svg { width:22px; }.reference-kpi strong { font-size:22px; }
   .reference-map-panel header,.reference-alerts header,.reference-tasks header { flex-wrap:wrap; }.reference-source-summary { grid-template-columns:1fr; }.reference-source-summary li { grid-template-columns:minmax(0,1fr) auto; }.reference-source-summary small { grid-column:1; }.reference-source-summary span { grid-column:2; grid-row:1 / 3; align-self:center; }.reference-recent .reference-table-wrap { overflow-x:auto; }.reference-recent table { min-width:620px; }

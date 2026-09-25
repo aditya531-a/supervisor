@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bell, CalendarDays, ChartNoAxesColumnIncreasing, ChevronDown, CloudUpload, FileText, FlaskConical, History, House, LogOut, MapPin, Menu, Search, Settings, X } from 'lucide-react';
+import { Bell, CalendarDays, ChartNoAxesColumnIncreasing, ChevronDown, FileText, FlaskConical, History, House, LogOut, MapPin, Menu, RefreshCw, Search, Settings, X } from 'lucide-react';
 import AuthGate from './components/AuthGate';
 import OverviewView from './components/OverviewView';
 import LabPortalView from './components/LabPortalView';
@@ -28,15 +28,19 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
   const [screen, setScreen] = useState<Screen>('overview');
   const [data, setData] = useState<Workspace | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [complaintFocus, setComplaintFocus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
+  const [sourceFocus, setSourceFocus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [labMode, setLabMode] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [draftStart, setDraftStart] = useState('');
+  const [draftEnd, setDraftEnd] = useState('');
   const load = useCallback(async () => {
     try { setData(await api<Workspace>('workspace')); setError(''); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not load the workspace.'); }
@@ -57,10 +61,12 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
   function navigate(next: Screen) {
     if (['labs', 'samples', 'results', 'audit'].includes(next)) setLabMode(true);
     if (['overview', 'sources', 'cases', 'alerts'].includes(next)) setLabMode(false);
-    setScreen(next); setMenuOpen(false); setQuery('');
+    setScreen(next); setMenuOpen(false); setQuery(''); setSourceFocus(null); setComplaintFocus(null);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
   function openCase(id: string) { setSelected(id); navigate('cases'); }
+  function openSource(id: string) { navigate('sources'); setSourceFocus(id); }
+  function openComplaint(id: string) { setSelected(null); navigate('cases'); setComplaintFocus(id); }
   const nav = labMode ? labNav : supervisorNav;
   const newAlerts = data ? data.cases.filter(record => record.status === 'under_review' && record.priority !== 'normal').length + data.ivr_complaints.filter(record => record.status === 'new').length : 0;
   const matches = data && query.trim() ? [
@@ -88,10 +94,10 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
     <div className="reference-main-column">
       <header className="reference-topbar">
         <button className="reference-menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>{menuOpen ? <X /> : <Menu />}</button>
-        <div className="reference-search"><Search size={22} /><input type="search" aria-label="Search sources and cases" placeholder={labMode ? 'Search samples' : 'Search sources'} value={query} onChange={event => setQuery(event.target.value)} /><kbd>⌘ K</kbd>{query && <div className="reference-search__results">{matches.length ? matches.map(match => <button key={`${match.kind}-${match.id}`} onClick={() => { if (match.kind === 'case') openCase(match.id); else navigate('sources'); }}><strong>{match.name}</strong><small>{match.kind} · {match.detail}</small></button>) : <p>No matching sources or cases.</p>}</div>}</div>
+        <div className="reference-search"><Search size={22} /><input type="search" aria-label="Search sources and cases" placeholder="Search sources or cases" value={query} onChange={event => setQuery(event.target.value)} />{query && <div className="reference-search__results">{matches.length ? matches.map(match => <button key={`${match.kind}-${match.id}`} onClick={() => { if (match.kind === 'case') openCase(match.id); else openSource(match.id); }}><strong>{match.name}</strong><small>{match.kind} · {match.detail}</small></button>) : <p>No matching sources or cases.</p>}</div>}</div>
         <button className="reference-topbar__district" onClick={() => navigate('sources')}><MapPin size={23} /><span>{labMode ? `${profile.team_name} Lab` : profile.team_name}</span><ChevronDown size={17} /></button>
-        <div className="reference-date-wrap"><button className="reference-topbar__date" onClick={() => setDateOpen(!dateOpen)} aria-label={startDate && endDate ? `${startDate} – ${endDate}` : 'All dates'} aria-expanded={dateOpen}><CalendarDays size={23} /><span>{startDate && endDate ? `${startDate} – ${endDate}` : 'All dates'}</span><ChevronDown size={17} /></button>{dateOpen && <div className="reference-date-popover"><p>Filters the overview and lab queue.</p><label>From<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} /></label><label>To<input type="date" min={startDate} value={endDate} onChange={event => setEndDate(event.target.value)} /></label><button onClick={() => { setStartDate(''); setEndDate(''); setDateOpen(false); }}>Clear dates</button><button onClick={() => setDateOpen(false)} disabled={!startDate || !endDate}>Apply</button></div>}</div>
-        <button className="reference-topbar__sync" disabled={loading} onClick={() => { setLoading(true); void load(); }} title="Refresh workspace"><CloudUpload size={25} fill="currentColor" /><span>{loading ? 'Syncing…' : 'Synced just now'}</span></button>
+        <div className="reference-date-wrap"><button className="reference-topbar__date" onClick={() => { setDraftStart(startDate); setDraftEnd(endDate); setDateOpen(!dateOpen); }} aria-label={startDate && endDate ? `${startDate} – ${endDate}` : 'All dates'} aria-expanded={dateOpen}><CalendarDays size={23} /><span>{startDate && endDate ? `${startDate} – ${endDate}` : 'All dates'}</span><ChevronDown size={17} /></button>{dateOpen && <div className="reference-date-popover"><p>Filters the overview and lab queue.</p><label>From<input type="date" value={draftStart} onChange={event => setDraftStart(event.target.value)} /></label><label>To<input type="date" min={draftStart} value={draftEnd} onChange={event => setDraftEnd(event.target.value)} /></label><button onClick={() => { setStartDate(''); setEndDate(''); setDraftStart(''); setDraftEnd(''); setDateOpen(false); }}>Clear dates</button><button onClick={() => { setStartDate(draftStart); setEndDate(draftEnd); setDateOpen(false); }} disabled={!draftStart || !draftEnd || draftEnd < draftStart}>Apply</button></div>}</div>
+        <button className="reference-topbar__sync" disabled={loading} onClick={() => { setLoading(true); void load(); }} aria-label={loading ? 'Refreshing workspace' : 'Refresh workspace'}><RefreshCw size={19} /><span>{loading ? 'Refreshing…' : 'Refresh'}</span></button>
         <button className="reference-topbar__bell" onClick={() => navigate('alerts')} aria-label={`${newAlerts} alerts`}><Bell size={23} />{newAlerts > 0 && <i />}</button>
         <button className="reference-topbar__profile" onClick={() => navigate('settings')}><span className="reference-avatar">{profile.email[0].toUpperCase()}</span><span><strong>{profile.email.split('@')[0]}</strong><small>Supervisor</small></span><ChevronDown size={16} /></button>
       </header>
@@ -99,12 +105,12 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
         {error && <p className="form-error" role="alert">{error}</p>}
         {notice && <p className="save-notice" role="status">{notice}</p>}
         {!data && !error && <p className="workspace-loading" role="status">Loading your team’s cases…</p>}
-        {periodData && screen === 'overview' && <OverviewView data={periodData} onNavigate={navigate} onOpenCase={openCase} />}
+        {periodData && screen === 'overview' && <OverviewView data={periodData} periodActive={Boolean(startDate && endDate)} onNavigate={navigate} onOpenCase={openCase} onOpenComplaint={openComplaint} />}
         {periodData && ['labs', 'samples', 'results', 'audit'].includes(screen) && <LabPortalView data={periodData} section={screen} onOpenCase={openCase} />}
-        {data && screen === 'cases' && <><div className="reference-subheading"><h1>Cases</h1><p>Review evidence, record action, and track each case to resolution.</p></div><SupervisorCasesView data={data} selectedId={selected} onSelect={setSelected} onMutate={mutate} /></>}
+        {data && screen === 'cases' && <><div className="reference-subheading"><h1>Cases</h1><p>Review evidence, record action, and track each case to resolution.</p></div><SupervisorCasesView data={data} selectedId={selected} focusComplaintId={complaintFocus} onSelect={setSelected} onMutate={mutate} /></>}
         {data && screen === 'reports' && <><div className="reference-subheading"><h1>Reports</h1><p>Current activity and safe aggregate exports from your team.</p></div><ReportsView data={data} /></>}
-        {data && screen === 'sources' && <><div className="reference-subheading"><h1>Water Sources</h1><p>Monitored sources across {profile.team_name}.</p></div><div className="reference-simple-grid">{data.water_sources.map(source => { const related = data.cases.filter(record => record.source_id === source.id); return <button className="reference-source-card" key={source.id} onClick={() => related.length ? openCase(related[0].id) : undefined}><MapPin size={22} /><span><strong>{source.name}</strong><small>{source.locality} · {related.length} {related.length === 1 ? 'case' : 'cases'}</small></span><ChevronDown size={16} /></button>; })}{!data.water_sources.length && <p className="empty-state">No water sources have been added to this team.</p>}</div></>}
-        {data && screen === 'alerts' && <><div className="reference-subheading"><h1>Alerts &amp; Updates</h1><p>Cases and phone reports that need attention.</p></div><div className="reference-simple-grid">{data.cases.filter(record => record.status === 'under_review' && record.priority !== 'normal').map(record => <button className="reference-source-card" key={record.id} onClick={() => openCase(record.id)}><Bell size={22} /><span><strong>{record.priority} case · {data.water_sources.find(source => source.id === record.source_id)?.name || 'Water source'}</strong><small>{record.id}</small></span></button>)}{data.ivr_complaints.filter(record => record.status === 'new').map(record => <button className="reference-source-card" key={record.id} onClick={() => navigate('cases')}><FileText size={22} /><span><strong>Phone report awaiting linkage</strong><small>{record.summary}</small></span></button>)}{newAlerts === 0 && <p className="empty-state">No alerts need attention right now.</p>}</div></>}
+        {data && screen === 'sources' && <><div className="reference-subheading"><h1>Water Sources</h1><p>Monitored sources across {profile.team_name}.</p></div>{sourceFocus && <button className="secondary-button reference-sources-clear" onClick={() => setSourceFocus(null)}>Show all sources</button>}<div className="reference-simple-grid">{data.water_sources.filter(source => !sourceFocus || source.id === sourceFocus).map(source => { const related = data.cases.filter(record => record.source_id === source.id).sort((a, b) => b.created_at.localeCompare(a.created_at)); return <article className="reference-source-card" key={source.id}><MapPin size={22} /><span><strong>{source.name}</strong><small>{source.locality} · {related.length} {related.length === 1 ? 'case' : 'cases'}</small></span>{related.length > 0 && <button onClick={() => openCase(related[0].id)}>Latest case</button>}</article>; })}{!data.water_sources.length && <p className="empty-state">No water sources have been added to this team.</p>}</div></>}
+        {data && screen === 'alerts' && <><div className="reference-subheading"><h1>Alerts &amp; Updates</h1><p>Cases and phone reports that need attention.</p></div><div className="reference-simple-grid">{data.cases.filter(record => record.status === 'under_review' && record.priority !== 'normal').map(record => <button className="reference-source-card" key={record.id} onClick={() => openCase(record.id)}><Bell size={22} /><span><strong>{record.priority} case · {data.water_sources.find(source => source.id === record.source_id)?.name || 'Water source'}</strong><small>{record.id}</small></span></button>)}{data.ivr_complaints.filter(record => record.status === 'new').map(record => <button className="reference-source-card" key={record.id} onClick={() => openComplaint(record.id)}><FileText size={22} /><span><strong>Phone report awaiting linkage</strong><small>{record.summary}</small></span></button>)}{newAlerts === 0 && <p className="empty-state">No alerts need attention right now.</p>}</div></>}
         {data && screen === 'settings' && <><div className="reference-subheading"><h1>Settings</h1><p>Your team workspace and account.</p></div><section className="reference-settings"><h2>Account</h2><dl><div><dt>Email</dt><dd>{profile.email}</dd></div><div><dt>Team</dt><dd>{profile.team_name}</dd></div><div><dt>Data</dt><dd>{profile.dataMode === 'synthetic' ? 'Synthetic demonstration records' : 'Live team records'}</dd></div></dl><button onClick={onLogout}><LogOut size={17} /> Sign out</button></section></>}
       </main>
     </div>
