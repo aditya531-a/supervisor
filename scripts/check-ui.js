@@ -64,11 +64,17 @@ async (page) => {
   await page.getByRole('button',{name:'Clear dates'}).click();
   await nav('Labs').click();
   await page.getByRole('heading',{name:'Lab Portal'}).waitFor();
+  assert(await page.getByRole('heading',{name:'Laboratory Reports'}).count()===1,'Lab view should show uploaded reports');
+  assert(await page.getByText('LAB-028').count()===1,'Uploaded report is missing');
+  assert(await page.getByRole('button',{name:'View Trend'}).count()===0,'Unavailable comparison should not have a control');
+  assert(await page.getByPlaceholder('Add a session note...').count()===0,'Session-only notes should not look persistent');
   await capture('reference-lab-after');
   await page.getByRole('button',{name:'Next',exact:true}).click();
   assert(await page.getByRole('heading',{name:'RS-1044'}).count()===1,'Next sample failed');
   await page.getByLabel('Filter sample status').selectOption('Pending');
   assert(await page.locator('.reference-lab-queue__list > button').count()===5,'Filter failed');
+  await page.getByLabel('Filter sample status').selectOption('Report uploaded');
+  assert(await page.locator('.reference-lab-queue__list > button').count()===1,'Uploaded report filter failed');
   await page.getByLabel('Filter sample status').selectOption('all');
   await nav('Overview').click();
   await page.setViewportSize({width:390,height:844});
