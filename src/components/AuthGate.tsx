@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, Droplets, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import type { Profile } from '../supervisor';
-import WaterScene from './WaterScene';
+import { bottomCorner, corner, landscape, logo } from '../brandAssets';
 
 export default function AuthGate({ onAuthenticated }: { onAuthenticated: (profile: Profile) => void }) {
   const [email, setEmail] = useState('');
@@ -34,46 +34,32 @@ export default function AuthGate({ onAuthenticated }: { onAuthenticated: (profil
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-story" aria-label="About JalSakshi">
-        <div className="auth-story__top">
-          <div className="identity identity--light">
-            <span className="identity-icon"><Droplets size={25} strokeWidth={1.8} /></span>
-            <span>JalSakshi<small>Water quality workspace</small></span>
-          </div>
-          <span className="auth-story__marker">Field evidence. Clear action.</span>
-        </div>
-        <div className="auth-story__copy">
+    <main className="reference-auth">
+      <section className="reference-auth__art" aria-label="About JalSakshi" style={{ backgroundImage: `url(${landscape})` }}>
+        <div className="brand"><img src={logo} alt="" /><span>JalSakshi<small>Water quality workspace</small></span></div>
+        <div className="reference-auth__story">
           <h1>Every source.<br />Every signal.<br /><em>In focus.</em></h1>
           <p>Turn field evidence into clear, accountable action for the communities you serve.</p>
         </div>
-        <WaterScene />
-        <p className="auth-story__footer">From first screening to verified resolution.</p>
       </section>
-
-      <section className="auth-form-side" aria-label="Supervisor sign in">
-        <div className="auth-form-wrap">
-          <span className="auth-form__icon"><ShieldCheck size={22} strokeWidth={1.7} /></span>
+      <section className="reference-auth__form-side" aria-label="Supervisor sign in">
+        <p className="reference-auth__promise">Field evidence <ArrowRight size={20} /> Clear action</p>
+        <img className="reference-auth__top-shape" src={corner} alt="" />
+        <img className="reference-auth__bottom-shape" src={bottomCorner} alt="" />
+        <div className="reference-auth__form-wrap">
+          <span className="reference-auth__shield"><ShieldCheck size={30} strokeWidth={1.8} /></span>
           <h2>Welcome back.</h2>
-          <p className="auth-form__intro">Sign in to your district workspace.</p>
-          <form className="auth-form" onSubmit={submit}>
+          <p className="reference-auth__intro">Sign in to your JalSakshi workspace.</p>
+          <form className="reference-auth__form" onSubmit={submit}>
             <label htmlFor="email">Email address</label>
-            <input id="email" type="email" autoComplete="username" placeholder="you@district.gov.in" value={email} onChange={event => setEmail(event.target.value)} required disabled={pending} />
+            <div className="reference-auth__input"><Mail size={24} /><input id="email" type="email" autoComplete="username" placeholder="you@email.org" value={email} onChange={event => setEmail(event.target.value)} required disabled={pending} /></div>
             <label htmlFor="password">Password</label>
-            <div className="password-field">
-              <input id="password" type={visible ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={password} onChange={event => setPassword(event.target.value)} required disabled={pending} />
-              <button type="button" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>
-                {visible ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
+            <div className="reference-auth__input"><LockKeyhole size={23} /><input id="password" type={visible ? 'text' : 'password'} autoComplete="current-password" placeholder="Password" value={password} onChange={event => setPassword(event.target.value)} required disabled={pending} /><button type="button" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={24} /> : <Eye size={24} />}</button></div>
             {error && <p className="auth-error" role="alert">{error}</p>}
-            <button className="sign-in" disabled={pending} type="submit">
-              <span>{pending ? 'Signing in…' : 'Sign in'}</span><ArrowRight size={19} />
-            </button>
+            <button className="reference-auth__submit" disabled={pending} type="submit"><span>{pending ? 'Signing in…' : 'Sign in'}</span><ArrowRight size={28} /></button>
           </form>
-          <p className="auth-help">Use your assigned district account. Contact your administrator if you need access.</p>
+          <p className="reference-auth__help">Use your assigned district account.<br />Contact your administrator if you need access.</p>
         </div>
-        <p className="auth-bottom">JalSakshi <span aria-hidden="true">/</span> Supervisor portal</p>
       </section>
     </main>
   );

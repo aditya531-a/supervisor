@@ -34,10 +34,10 @@ export default function ReportsView({ data }: { data: Workspace }) {
         </table>
       </section>
       <aside className="export-panel">
-        <img className="export-panel__image" src="/river-at-dusk.webp" alt="" width="1672" height="941" loading="lazy" />
         <div className="export-panel__content">
-          <h2>A clearer picture.<br />Ready to share.</h2>
-          <p>Download a CSV with total cases, status counts, and priority counts. Data mode is included so the context travels with the summary.</p>
+          <p className="eyebrow">DATA EXPORT / CSV</p>
+          <h2>Share the counts.<br />Keep records private.</h2>
+          <p>Download totals by case status and priority. The file includes the data mode so the figures stay in context.</p>
           <button className="primary-button" disabled={busy} onClick={() => void exportSummary()}><Download size={17} />{busy ? 'Preparing…' : 'Export aggregate CSV'}</button>
           {error && <p className="form-error" role="alert">{error}</p>}
           <p className="export-panel__privacy"><ShieldCheck size={17} />Aggregate counts only. Case IDs, locations, contact details, evidence, and audit notes are excluded.</p>
