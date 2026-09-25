@@ -50,6 +50,11 @@ async (page) => {
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await page.getByRole('heading',{name:'Good morning, Ananya.'}).waitFor();
   await capture('reference-overview-after');
+  assert(await page.getByRole('columnheader',{name:'Opened'}).count()===1,'Case creation date should be labeled Opened');
+  assert(await page.getByRole('button',{name:'Open case RS-1043'}).count()===1,'Recent cases need a keyboard-accessible link');
+  assert(await page.getByText('Contamination Trend').count()===0,'Fixed illustrative trends should not appear as team data');
+  assert(await page.locator('.reference-source-summary li').count()===6,'Source summary should use team records');
+  assert(await page.locator('.reference-map').count()===0,'Illustrative safety markers should not appear as current data');
   await page.getByRole('button',{name:'All dates'}).click();
   await page.getByLabel('From').fill('2025-01-01');
   await page.getByLabel('To').fill('2025-12-31');

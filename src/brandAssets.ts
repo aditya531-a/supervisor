@@ -5,6 +5,5 @@ import pump from '../Assets/ChatGPT Image Sep 25, 2026, 02_01_54 PM-4.png';
 import corner from '../Assets/ChatGPT Image Sep 25, 2026, 02_01_58 PM-7.png';
 import logo from '../Assets/ChatGPT Image Sep 25, 2026, 02_01_59 PM-8.png';
 import bottomCorner from '../Assets/ChatGPT Image Sep 25, 2026, 02_02_00 PM-9.png';
-import mapReference from '../Assets/Dashboard2.png';
 
-export { landscape, riverLandscape, labLandscape, pump, corner, logo, bottomCorner, mapReference };
+export { landscape, riverLandscape, labLandscape, pump, corner, logo, bottomCorner };
