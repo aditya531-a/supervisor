@@ -25,6 +25,7 @@ async (page) => {
     if(path==='/api/auth/login') { if(rejectLogin) return route.fulfill({status:401,json:{error:'Check your email and password, then try again.'}}); authenticated=true; return route.fulfill({json:profile}); }
     if(path==='/api/auth/logout') {authenticated=false;return route.fulfill({json:{ok:true}});}
     if(path==='/api/supervisor/workspace') return failWorkspace?route.fulfill({status:503,json:{error:'Unable to load team records.'}}):route.fulfill({json:workspace});
+    if(path==='/api/supervisor/water_sources' && route.request().method()==='PATCH') { const source=water_sources[0];Object.assign(source,route.request().postDataJSON());return route.fulfill({json:{ok:true}}); }
     if(path==='/api/supervisor/export') return route.fulfill({contentType:'text/csv',body:'data_mode,metric,count\nsynthetic,total_cases,6\n'});
     if(path==='/api/supervisor/rpc/verify_case_audit') return route.fulfill({json:{valid:true}});
     return route.fulfill({status:400,json:{error:'Fixture mutation is not persisted.'}});
@@ -119,6 +120,11 @@ async (page) => {
   await page.getByRole('heading',{name:'Cases',exact:true}).waitFor();
   await page.locator('.queue-row').first().click();
   await page.getByRole('heading',{name:names[0],exact:true}).waitFor();
+  await page.locator('.source-details summary').click();
+  await page.getByLabel('Source name').fill('Updated hand pump');
+  await page.getByRole('button',{name:'Save source'}).click();
+  await page.getByRole('heading',{name:'Updated hand pump'}).waitFor();
+  assert(await page.getByLabel('Source name').inputValue()==='Updated hand pump','Source form should reflect the saved record');
   await nav('Reports').click();
   await page.getByRole('heading',{name:'Current team activity'}).waitFor();
   assert((await page.locator('.reports-summary td').allTextContents()).join(',')==='6,5,1,0,2,2,2','Report counts must match loaded records');
