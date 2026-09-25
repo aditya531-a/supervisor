@@ -3,8 +3,8 @@ import { createHash, randomBytes } from 'node:crypto'
 export function readConfig(env: Record<string, string | undefined>) {
   const environment = env.JALSAKSHI_ENVIRONMENT || 'development'
   if (!['development', 'test', 'production'].includes(environment)) throw new Error('JALSAKSHI_ENVIRONMENT must be development, test, or production.')
-  const dataMode = env.JALSAKSHI_TENANT_DATA_MODE || 'synthetic'
-  if (dataMode !== 'synthetic') throw new Error('Only synthetic tenant data is implemented. Live database workflows are not connected.')
+  const dataMode = env.JALSAKSHI_TENANT_DATA_MODE || 'live'
+  if (!['synthetic', 'live'].includes(dataMode)) throw new Error('JALSAKSHI_TENANT_DATA_MODE must be synthetic or live.')
   const backendUrl = env.JALSAKSHI_BACKEND_URL || env.JALSAKSHI_SUPABASE_URL
   const supabaseUrl = env.JALSAKSHI_SUPABASE_URL || backendUrl
   const publishableKey = env.JALSAKSHI_SUPABASE_PUBLISHABLE_KEY

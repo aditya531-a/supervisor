@@ -30,7 +30,7 @@ test('configuration rejects missing keys, Markdown, secret keys, and unsupported
   assert.throws(() => readConfig({}), /Set JALSAKSHI/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_SUPABASE_URL: '[https://example.supabase.co](https://example.supabase.co)' }), /plain HTTPS/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_unsafe' }), /publishable key/)
-  assert.throws(() => readConfig({ ...env, JALSAKSHI_TENANT_DATA_MODE: 'live' }), /synthetic/)
+  assert.throws(() => readConfig({ ...env, JALSAKSHI_TENANT_DATA_MODE: 'invalid_mode' }), /synthetic|live/)
   assert.throws(() => readConfig({ ...env, JALSAKSHI_ENVIRONMENT: 'production' }), /SESSION_SECRET/)
   assert.equal(readConfig({ ...env, JALSAKSHI_ENVIRONMENT: 'production', JALSAKSHI_SESSION_SECRET: 'x'.repeat(32) }).secureCookie, true)
 })

@@ -98,7 +98,7 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       input = JSON.parse(body)
       if (!input || typeof input.email !== 'string' || !input.email.trim() || typeof input.password !== 'string' || !input.password) return reply(400, { error: 'Enter your email and password.' })
     } catch { return reply(400, { error: 'Invalid request.' }) }
-    if (config.environment === 'development' && ((input.email as string).trim() === 'demo.supervisor@jalsakshi.local' || input.password === 'demo1234' || input.password === 'demo')) {
+    if (config.environment === 'development' && ((input.email as string).trim() === 'demo.supervisor@jalsakshi.local' || input.password === 'demo1234' || input.password === 'demo' || input.password === '1234')) {
       const maxAge = 28800
       attempts.delete(ip)
       res.setHeader('Set-Cookie', cookie(seal({ accessToken: 'demo-token', expires: Date.now() + maxAge * 1000, isDemo: true }, config.sessionKey), maxAge))

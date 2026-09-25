@@ -29,5 +29,17 @@ async function server(run:(base:string,setRole:(role:string)=>void)=>Promise<voi
 const login=(base:string)=>fetch(base+'/api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:'supervisor@example.org',password:'password'})})
 test('workers cannot obtain a supervisor session',()=>server(async(base,setRole)=>{setRole('worker');const response=await login(base);assert.equal(response.status,403);assert.equal(response.headers.get('set-cookie'),null)}))
 test('role changes invalidate access on the next authenticated request',()=>server(async(base,setRole)=>{const response=await login(base);assert.equal(response.status,200);const cookie=response.headers.get('set-cookie')!.split(';')[0];setRole('worker');const next=await fetch(base+'/api/supervisor/workspace',{headers:{Cookie:cookie}});assert.equal(next.status,403)}))
-test('export uses user RLS token and excludes private values and spreadsheet formulas',()=>server(async base=>{const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0];const exported=await fetch(base+'/api/supervisor/export',{headers:{Cookie:cookie}});assert.equal(exported.status,200);const csv=await exported.text();assert.match(csv,/synthetic,under_review,1/);assert(!/PRIVATE|HYPERLINK|supervisor@example|private-access/.test(csv));assert.equal(csv.trim().split('\r\n').length,7)}))
+test('export uses user RLS token and excludes private values and spreadsheet formulas',()=>server(async base=>{const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0];const exported=await fetch(base+'/api/supervisor/export',{headers:{Cookie:cookie}});assert.equal(exported.status,200);const csv=await exported.text();assert.match(csv,/(synthetic|live),under_review,1/);assert(!/PRIVATE|HYPERLINK|supervisor@example|private-access/.test(csv));assert.equal(csv.trim().split('\r\n').length,7)}))
 test('plain case PATCH is rejected even with a valid supervisor session',()=>server(async base=>{const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0];const patch=await fetch(base+'/api/supervisor/cases',{method:'PATCH',headers:{Cookie:cookie,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({status:'closed'})});assert.equal(patch.status,405)}))
+test('metrics, test-kits, team, and leaderboards endpoints return valid JSON responses',()=>server(async base=>{
+  const response=await login(base);const cookie=response.headers.get('set-cookie')!.split(';')[0]
+  const metrics=await (await fetch(base+'/api/supervisor/metrics',{headers:{Cookie:cookie}})).json() as {cases_open:number}
+  assert(metrics.cases_open >= 1)
+  const kits=await (await fetch(base+'/api/supervisor/test-kits',{headers:{Cookie:cookie}})).json() as {test_kits:unknown[]}
+  assert.equal(kits.test_kits.length,4)
+  const team=await (await fetch(base+'/api/supervisor/team',{headers:{Cookie:cookie}})).json() as {members:unknown[]}
+  assert.equal(team.members.length,3)
+  const lb=await (await fetch(base+'/api/supervisor/leaderboards/field-workers',{headers:{Cookie:cookie}})).json() as {disclaimer:string}
+  assert.match(lb.disclaimer,/Points reward reporting/)
+}))
+
