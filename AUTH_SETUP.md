@@ -5,7 +5,7 @@
 `.env`, `.env.local`, and `*.local` are Git-ignored and denied by Vite's file server. Use plain values, without Markdown wrappers. Process environment values take precedence over local files.
 
 - `JALSAKSHI_ENVIRONMENT=development`: localhost runtime; production enables Secure cookies and requires HTTPS.
-- `JALSAKSHI_TENANT_DATA_MODE=synthetic`: persisted synthetic team data, clearly labelled in the UI. Live mode is rejected at startup.
+- `JALSAKSHI_TENANT_DATA_MODE=synthetic`: persisted synthetic team data, clearly labelled in the UI. The configured mode must match the team's `data_mode`; use `live` only for a team with real records.
 - `JALSAKSHI_SUPABASE_URL`: project HTTPS URL.
 - `JALSAKSHI_SUPABASE_PUBLISHABLE_KEY`: publishable/anon key, never a service-role key.
 - `JALSAKSHI_DATABASE_URL`: used only by administrative migrations and fixture scripts, never by the request-serving backend. Use the IPv4 session pooler, `postgres.PROJECT_REF` username, port 5432, and `sslmode=require`. URL-encode password characters. Scripts verify TLS using Supabase's published CA.
@@ -24,7 +24,7 @@ Access-token expiry (at most eight hours), revocation, or changing the session s
 
 ## Vercel
 
-`api/index.js` serves `/api/*` with the same handler as the dev server. In Project Settings > Environment Variables set `JALSAKSHI_ENVIRONMENT=production`, `JALSAKSHI_SUPABASE_URL`, `JALSAKSHI_SUPABASE_PUBLISHABLE_KEY`, and `JALSAKSHI_SESSION_SECRET`, then redeploy. The login-attempt limiter is per instance; Supabase's own rate limits still apply.
+`api/index.js` serves `/api/*` with the same handler as the dev server. In Project Settings > Environment Variables set `JALSAKSHI_ENVIRONMENT=production`, `JALSAKSHI_TENANT_DATA_MODE=synthetic` for the demo team, `JALSAKSHI_SUPABASE_URL`, `JALSAKSHI_SUPABASE_PUBLISHABLE_KEY`, and `JALSAKSHI_SESSION_SECRET`, then redeploy. The login-attempt limiter is per instance; Supabase's own rate limits still apply.
 
 ## Migrations
 

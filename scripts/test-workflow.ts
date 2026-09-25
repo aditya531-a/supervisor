@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {randomUUID} from 'node:crypto'
-import {database} from './database.ts'
+import {assertSupervisorSchema,database} from './database.ts'
 const credentials=JSON.parse(readFileSync('.demo-credentials.local','utf8'))
 const base=process.env.JALSAKSHI_TEST_URL||'http://127.0.0.1:5175'
+const signIn=await fetch(base+'/api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:credentials.email,password:credentials.password})});assert.equal(signIn.status,200)
+const cookie=signIn.headers.get('set-cookie')!.split(';')[0]
+const headers={Origin:base,'Content-Type':'application/json',Cookie:cookie}
 const db=await database();const source=randomUUID(),sample=randomUUID(),complaint=randomUUID();let caseId:string
 try{
+ await assertSupervisorSchema(db)
  const team=(await db.query('select data_mode from public.teams where id=$1',[credentials.team_id])).rows[0]
  assert.equal(team?.data_mode,'synthetic','Integration test must only write to the demo synthetic team')
  await db.query('begin')
@@ -15,9 +19,6 @@ try{
  await db.query("insert into public.ivr_complaints(id,team_id,source_id,summary) values($1,$2,$3,'Synthetic simultaneous-escalation test')",[complaint,credentials.team_id,source])
  await db.query('commit')
 }catch(e){await db.query('rollback');throw e}finally{await db.end()}
-const signIn=await fetch(base+'/api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:credentials.email,password:credentials.password})});assert.equal(signIn.status,200)
-const cookie=signIn.headers.get('set-cookie')!.split(';')[0]
-const headers={Origin:base,'Content-Type':'application/json',Cookie:cookie}
 const action=(path:string,body:object)=>fetch(`${base}/api/supervisor/${path}`,{method:'POST',headers,body:JSON.stringify(body)})
 let response=await action('rpc/close_case',{p_case_id:caseId,p_expected_version:1,p_reason:'No evidence'})
 assert.equal(response.status,422)
@@ -35,5 +36,5 @@ const escalations=await Promise.all([action('rpc/create_case_from_ivr',{p_compla
 const summary=await (await fetch(`${base}/api/supervisor/export`,{headers})).text()
 for(const privateValue of [caseId,source,sample,credentials.email,'Synthetic worker observation','Synthetic test laboratory','file_base64']) assert(!summary.includes(privateValue))
 assert.match(summary,/^data_mode,metric,count/)
-console.log('PASS: live demo login, missing-evidence rejection, upload != verification, concurrent closure (one success / one conflict), audit chain, concurrent IVR escalation (no duplicate), aggregate export privacy.')
+console.log('PASS: demo login, missing-evidence rejection, upload != verification, concurrent closure (one success / one conflict), audit chain, concurrent IVR escalation (no duplicate), aggregate export privacy.')
 console.log('Synthetic concurrency demonstration records retained in the demo team for inspection.')

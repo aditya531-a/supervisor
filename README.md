@@ -45,4 +45,4 @@ npm run lint
 
 HTTP tests use mocked providers. Database tests roll back their fixtures and require the supervisor schema. Workflow tests require the running localhost app and a seeded demo account; they retain explicitly synthetic demonstration records. Run `npm run db:migrate -- --check` before seeding or testing a database. Node 24 runs the TypeScript scripts directly.
 
-The existing `jalsakshi` ingestion schema is preserved. Automatic import from that schema still requires an explicit tenant and worker identity mapping. Live mode is intentionally unavailable in this local demo. See setup notes before deployment.
+The existing `jalsakshi` ingestion schema is preserved. Automatic import from that schema still requires an explicit tenant and worker identity mapping. This local demo uses synthetic records; a live team requires separately provisioned real records and matching mode configuration. See setup notes before deployment.
