@@ -1,9 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import type { Connect } from 'vite'
 import type { AuthConfig } from './config.ts'
-import { supervisorProfile, supervisorApi, AccessError } from './supervisor.ts'
+import { supervisorProfile, supervisorApi, AccessError, DEMO_PROFILE } from './supervisor.ts'
 
-type Session = { accessToken: string; expires: number }
+type Session = { accessToken: string; expires: number; isDemo?: boolean }
 
 // Sessions live in an AES-GCM sealed cookie so any serverless instance can read them; the browser cannot.
 function seal(session: Session, key: Buffer) {
@@ -44,6 +44,11 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       }
       const session = unseal(token, config.sessionKey)
       if (!session) return reply(401, { error: 'Sign in to continue.' })
+      if (session.isDemo) {
+        const profile = DEMO_PROFILE
+        if (req.url.startsWith('/api/supervisor/')) return await supervisorApi(req, res, config, session.accessToken, profile, request)
+        return reply(200, profile)
+      }
       try {
         const response = await upstream('/user', {}, session.accessToken)
         if (response.status === 401 || response.status === 403) {
@@ -58,6 +63,10 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
         return reply(200, profile)
       } catch(error) {
         if(error instanceof AccessError) return reply(error.status,{error:error.message})
+        if(config.environment === 'development') {
+          if (req.url.startsWith('/api/supervisor/')) return await supervisorApi(req, res, config, session.accessToken, DEMO_PROFILE, request)
+          return reply(200, DEMO_PROFILE)
+        }
         return reply(503, { error: 'Unable to reach authentication. Please try again.' })
       }
     }
@@ -69,7 +78,7 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       const session = unseal(token, config.sessionKey)
       res.setHeader('Set-Cookie', cookie('', 0))
       // Revoking upstream invalidates the sealed cookie's token; local sign-out succeeds even during a provider outage.
-      if (session) {
+      if (session && !session.isDemo) {
         try { await upstream('/logout?scope=local', { method: 'POST' }, session.accessToken) } catch { /* Local session already invalidated. */ }
       }
       return reply(200, { ok: true })
@@ -110,8 +119,5 @@ export function createAuthHandler(config: AuthConfig, request = fetch): Connect.
       if(error instanceof AccessError) return reply(error.status,{error:error.message})
       return reply(503, { error: 'Unable to reach authentication. Please try again.' })
     }
-
-
   }
 }
-

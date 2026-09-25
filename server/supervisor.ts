@@ -4,6 +4,15 @@ import type { AuthConfig } from './config.ts'
 export interface Principal { id: string; email: string; role: 'supervisor'; team_id: string; team_name: string; dataMode: string }
 export class AccessError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status } }
 
+export const DEMO_PROFILE: Principal = {
+  id: '00000000-0000-0000-0000-000000000001',
+  email: 'demo.supervisor@jalsakshi.local',
+  role: 'supervisor',
+  team_id: '00000000-0000-0000-0000-000000000002',
+  team_name: 'Riverside Demo District',
+  dataMode: 'synthetic',
+}
+
 export function restClient(config: AuthConfig, accessToken: string, request = fetch) {
   return (path: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers)
