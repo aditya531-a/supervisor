@@ -12,7 +12,7 @@ async (page) => {
   const names = ['Kalyanpur Hand Pump','Devnadi Community Tap','Patel Nagar Borewell','Nirmalpur Tank','Sundargram Well','Chandipur Anganwadi'];
   const water_sources = names.map((name,index) => ({ id:'source-'+index, name, locality:name.split(' ')[0], team_id:profile.team_id, version:1 }));
   const cases = names.map((name,index) => ({ id:'RS-10'+(43+index), team_id:profile.team_id, source_id:'source-'+index, screening_id:'sample-'+index, origin:'screening', status:index===4?'closed':'under_review', priority:['critical','critical','urgent','normal','normal','urgent'][index], created_at:timestamp, version:1, closed_at:index===4?timestamp:null, closure_reason:index===4?'Resolved with evidence':null }));
-  const screening_records = names.map((name,index) => ({ id:'sample-'+index, source_id:'source-'+index, sample_code:'RS-10'+(43+index), machine_suggestion:'Elevated turbidity indicated. Laboratory review recommended.', human_observation:'The field worker recorded cloudy water after rainfall.', screening_flag:'flagged', captured_at:timestamp, created_by:'worker-demo', capture_name:null }));
+  const screening_records = names.map((name,index) => ({ id:'sample-'+index, source_id:'source-'+index, sample_code:'RS-10'+(43+index), machine_suggestion:'Elevated turbidity indicated. Laboratory review recommended.', human_observation:'The field worker recorded cloudy water after rainfall.', screening_flag:'flagged', captured_at:'2026-09-21T20:00:00.000Z', created_by:'worker-demo', capture_name:null }));
   const workspace = { profile, water_sources, cases, screening_records,
     lab_reports:[{ id:'lab-demo', case_id:cases[0].id, source_id:'source-0', screening_id:'sample-0', report_number:'LAB-028', lab_name:'District Water Laboratory', result:'Turbidity at 7.2 NTU', file_name:'report.pdf', file_sha256:'a'.repeat(64), uploaded_at:timestamp, uploaded_by:profile.id, verification_status:'uploaded', verified_at:null, verified_by:null, verification_note:null }],
     case_actions:[], retests:[], resident_communications:[],
@@ -77,6 +77,14 @@ async (page) => {
   await page.getByRole('button',{name:'Clear dates'}).click();
   assert(await page.getByRole('button',{name:/High-Risk Alerts/}).locator('strong').textContent()==='4','Clear dates should restore the overview');
   assert(await page.getByRole('button',{name:/Screenings Today/}).count()===1,'Clearing dates should restore the daily label');
+  const localDay=await page.evaluate(()=>{const captured=new Date('2026-09-21T20:00:00.000Z');return `${captured.getFullYear()}-${String(captured.getMonth()+1).padStart(2,'0')}-${String(captured.getDate()).padStart(2,'0')}`;});
+  await page.getByRole('button',{name:'All dates'}).click();
+  await page.getByLabel('From').fill(localDay);
+  await page.getByLabel('To').fill(localDay);
+  await page.getByRole('button',{name:'Apply'}).click();
+  assert(await page.getByRole('button',{name:/Screenings in period/}).locator('strong').textContent()==='6','Selected local day should include all six screenings');
+  await page.getByRole('button',{name:localDay+' – '+localDay}).click();
+  await page.getByRole('button',{name:'Clear dates'}).click();
   await nav('Labs').click();
   await page.getByRole('heading',{name:'Lab Portal'}).waitFor();
   assert(await page.getByRole('heading',{name:'Laboratory Reports'}).count()===1,'Lab view should show uploaded reports');

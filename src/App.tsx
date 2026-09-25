@@ -73,7 +73,9 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
     ...data.water_sources.filter(source => `${source.name} ${source.locality} ${source.id}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map(source => ({ id: source.id, name: source.name, detail: source.locality, kind: 'source' })),
     ...data.cases.filter(record => record.id.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map(record => ({ id: record.id, name: record.id, detail: record.priority, kind: 'case' })),
   ] : [];
-  const inPeriod = (value: string) => value.slice(0, 10) >= startDate && value.slice(0, 10) <= endDate;
+  const periodStart = new Date(`${startDate}T00:00:00`);
+  const periodEnd = new Date(`${endDate}T23:59:59.999`);
+  const inPeriod = (value: string) => { const at = new Date(value); return at >= periodStart && at <= periodEnd; };
   const periodData = data && startDate && endDate ? {
     ...data,
     cases: data.cases.filter(record => inPeriod(record.created_at)),
