@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createAuthHandler } from './auth.ts'
 import { readConfig } from './config.ts'
 const config=readConfig({JALSAKSHI_SUPABASE_URL:'https://project.supabase.co',JALSAKSHI_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',JALSAKSHI_TENANT_DATA_MODE:'synthetic'})
-const json=(value:unknown,status=200,headers:HeadersInit={})=>Promise.resolve(new Response(JSON.stringify(value),{status,headers}))
+const json=(value:unknown,status=200,headers:Record<string,string>={})=>Promise.resolve(new Response(JSON.stringify(value),{status,headers}))
 async function server(run:(base:string,setRole:(role:string)=>void,setMode:(mode:string)=>void,setCaseTotal:(total:number)=>void)=>Promise<void>){
  let role='supervisor'
  let mode='synthetic'
