@@ -42,15 +42,15 @@ function Dashboard({ profile, onLogout }: { profile: Profile; onLogout: () => vo
   const [draftStart, setDraftStart] = useState('');
   const [draftEnd, setDraftEnd] = useState('');
   const load = useCallback(async () => {
-    try { setData(await api<Workspace>('workspace')); setError(''); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not load the workspace.'); }
+    try { setData(await api<Workspace>('workspace')); setError(''); return true; }
+    catch (reason) { setData(null); setError(reason instanceof Error ? reason.message : 'Could not load the workspace.'); return false; }
     finally { setLoading(false); }
   }, []);
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
   async function mutate(path: string, body: unknown, method = 'POST') {
     setNotice('');
-    try { await api(path, body, method); await load(); setNotice('Saved. The case history has been updated.'); }
+    try { await api(path, body, method); setNotice(await load() ? 'Saved. The case history has been updated.' : 'Saved, but the workspace could not refresh. Retry loading to review the latest history.'); }
     catch (reason) {
       if (reason instanceof ApiError && reason.status === 409) {
         await load(); setError('Another supervisor changed this record. Review the refreshed evidence before trying again.');

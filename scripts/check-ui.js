@@ -118,6 +118,13 @@ async (page) => {
   await page.getByRole('button',{name:'Export aggregate CSV'}).click();
   assert((await downloadEvent).suggestedFilename()==='jalsakshi-safe-summary.csv','CSV export failed');
   failWorkspace=true;
+  await page.getByRole('button',{name:'Refresh workspace'}).click();
+  await page.getByRole('button',{name:'Retry loading'}).waitFor();
+  assert(await page.getByRole('heading',{name:'Current team activity'}).count()===0,'Failed refresh should hide stale records');
+  failWorkspace=false;
+  await page.getByRole('button',{name:'Retry loading'}).click();
+  await page.getByRole('heading',{name:'Current team activity'}).waitFor();
+  failWorkspace=true;
   await page.reload();
   await page.getByRole('button',{name:'Retry loading'}).waitFor();
   failWorkspace=false;
